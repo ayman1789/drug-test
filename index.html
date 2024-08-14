@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التفاعلات بين الأدوية | Drug-Drug Interaction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8">التفاعلات بين الأدوية</h1>
+        
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="apiKey">
+                    مفتاح API:
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="apiKey" type="text" placeholder="أدخل مفتاح API الخاص بك">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="drug1">
+                    الدواء الأول:
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="drug1" type="text" placeholder="أدخل اسم الدواء الأول">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="drug2">
+                    الدواء الثاني:
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="drug2" type="text" placeholder="أدخل اسم الدواء الثاني">
+            </div>
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="button" id="submitBtn">
+                    بحث
+                </button>
+            </div>
+        </div>
+
+        <div id="loadingIndicator" class="text-center hidden">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+            <p class="mt-2">جارٍ البحث...</p>
+        </div>
+
+        <div id="conclusion" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 hidden">
+            <h2 class="text-2xl font-bold mb-4">النتيجة:</h2>
+            <div id="interactionResult" class="prose"></div>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+        const model = 'llama-3.1-70b-versatile';
+
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value;
+            const drug1 = document.getElementById('drug1').value;
+            const drug2 = document.getElementById('drug2').value;
+
+            if (!apiKey || !drug1 || !drug2) {
+                alert('الرجاء إدخال جميع المعلومات المطلوبة');
+                return;
+            }
+
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+            document.getElementById('conclusion').classList.add('hidden');
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            {role: "system", content: "أنت مساعد طبي محترف متخصص في التفاعلات بين الأدوية. قم بتقديم معلومات دقيقة ومفصلة عن التفاعلات المحتملة بين الأدوية المذكورة، مع الاستشهاد بمصادر موثوقة مثل LactMed Database، American Academy of Pediatrics (AAP)، World Health Organization (WHO)، The Drugs and Lactation Database (Drugs.com)، European Medicines Agency (EMA)، و The Royal Women's Hospital Clinical Guidelines. قدم الإجابة بتنسيق Markdown مع نقاط رئيسية."},
+                            {role: "user", content: `قم بتحليل التفاعل المحتمل بين ${drug1} و ${drug2}. قدم معلومات مفصلة عن أي تفاعلات محتملة، والآثار الجانبية، والتوصيات للمرضى والأطباء. استشهد بالمصادر الموثوقة المذكورة أعلاه.`}
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                const result = data.choices[0].message.content;
+
+                document.getElementById('interactionResult').innerHTML = marked.parse(result);
+                document.getElementById('conclusion').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى.');
+            } finally {
+                document.getElementById('loadingIndicator').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
